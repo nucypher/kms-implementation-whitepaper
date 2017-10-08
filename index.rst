@@ -65,13 +65,45 @@ ECIES normally works in such a way that it generates a symmetric key to be used 
 In our case, we want to have the same symmetric key encrypted for multiple paths.
 Hence, we encrypt a random per-file symmetric key with the generated key, and the file content is encrypted by the per-file symmetric key itself.
 
+The concept of generating a shares secret by ECIES can be expressed with the following pseudocode::
+
+    shared_secret, ciphertext = ecies.encapsulate(pubkey_enc)
+    decrypted_shared_secret = ecies.decapsulate(privkey_enc)
+    assert shared_secret == decrypted_shared_secret
+
+The ``shared_secret`` will be available to both encrypting and decrypting person.
+
 .. [ECIES] https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme
 .. [CPA-security] https://en.wikipedia.org/wiki/Chosen-plaintext_attack
 .. [CCA-security] https://en.wikipedia.org/wiki/Chosen-ciphertext_attack
 
-Symmetric encryption
------------------------
-Using public key encryption straight away for encrypting bulk of the data would
+Symmetric encryption. Hybrid encryption
+-----------------------------------------
+Using public key encryption straight away for encrypting bulk of the data would be very slow (each operation on a 256-bit elliptic curve takes about quarter of
+a millisecond).
+So, for encrypting the bulk of the data we use symmetric block ciphers::
+
+    encrypted_data = encrypt_sym(sym_key, data)
+    decrypted_data = decrypt_sym(sym_key, encrypted_data)
+    assert data == decrypted_data
+
+For the symmetric block cipher, we use NaCl's SecretBox which uses Salsa20 for encryption and Poly1305 for authentication [NaCl]_.
+In particular, we use a Python wrapper [PyNaCl]_.
+
+We use symmetric encryption in conjunction with public key encryption by ECIES.
+The pseudocode for this::
+
+    sym_key, enc_sym_key = ecies.encapsulate(pubkey_enc)
+    encrypted_data = encrypt_sym(sym_key, data)
+    # enc_sym_key stored with encrypted_data
+    ...
+
+    sym_key = ecies.decapsulate(privkey_enc, enc_sym_key)
+    decrypted_data = decrypt_sym(sym_key, encrypted_data)
+    assert decrypted_data == data
+
+.. [NaCl] https://nacl.cr.yp.to
+.. [PyNaCl] http://pynacl.readthedocs.io/en/latest/secret/
 
 Key per subpath
 ------------------
