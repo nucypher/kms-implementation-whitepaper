@@ -208,6 +208,10 @@ We need to find at least ``m`` Ursulas out of ``n`` who have ``kFrags`` (re-encr
 
 Digital signatures
 --------------------
+Sometimes network participants need to prove themselves in order to behave correctly.
+This can be Ursula who puts up her stake, Alice who wants to prove Bob that it's her who created data.
+For digital signing, we use ECDSA, using *secp256k1* curve, similar to what Ethereum and Bitcoin use.
+Each participants has a signing keypair ``privkey_sig / pubkey_sig`` which coincides with an Ethereum address associated with this participant.
 
 Network discovery
 ====================
