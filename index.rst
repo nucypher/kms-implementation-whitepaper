@@ -183,9 +183,28 @@ Implementation of re-encryption for ECIES scheme can be found on our github, we 
 
 Split-key re-encryption
 --------------------------
+So far we've trusted one Ursula to re-encrypt data.
+While Ursula cannot decrypt anything, she is responsible for revocation, applying time-based and payment conditions.
+It is clear that a malicious Ursula can misapply these conditions.
 
-All the encryption flow
--------------------------
+In order to mitigate this risk, we make a split-key threshold (m-of-n) re-encryption.
+Conceptually, it works in the following manner::
+
+    # Alice's side
+    ciphertext_alice = encrypt(pubkey_enc_a, data)
+    kFrags = split_rekey(privkey_enc_a, pubkey_enc_b, m, n)
+
+    # kFrags are given to n Ursulas
+
+    # Ursulas' side
+    for ursula in range(m):  # or any number between m and n
+        ciphertext_frags_bob[i] = reencrypt(kFrags[ursula], ciphertext_alice)
+
+    # Bob's side
+    ciphertext_bob = combine(ciphertext_frags_bob)
+    data = decrypt(privkey_enc_b, ciphertext_bob)
+
+We need to find at least ``m`` Ursulas out of ``n`` who have ``kFrags`` (re-encryption key fragments) in order to make the text decryptable by Bob.
 
 Digital signatures
 --------------------
