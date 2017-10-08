@@ -57,6 +57,7 @@ Conceptually, public key encryption algorithms encrypt data using public key (wh
     assert data == decrypted_data
 
 For public key encryption we use Integrated Encryption Scheme [ECIES]_.
+This scheme is both CPA-secure [CPA-security]_ and CCA-secure [CCA-security]_.
 We use elliptic curve cryptography on the curve *secp256k1* (the same as Bitcoin and Ethereum uses).
 
 In order to encrypt the bulk of the data, usually *symmetric encryption* is used.
@@ -65,9 +66,12 @@ In our case, we want to have the same symmetric key encrypted for multiple paths
 Hence, we encrypt a random per-file symmetric key with the generated key, and the file content is encrypted by the per-file symmetric key itself.
 
 .. [ECIES] https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme
+.. [CPA-security] https://en.wikipedia.org/wiki/Chosen-plaintext_attack
+.. [CCA-security] https://en.wikipedia.org/wiki/Chosen-ciphertext_attack
 
 Symmetric encryption
 -----------------------
+Using public key encryption straight away for encrypting bulk of the data would
 
 Key per subpath
 ------------------
