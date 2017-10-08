@@ -128,7 +128,9 @@ The full pseudocode of encrypting a file with all the subpath keys::
     ...
 
     # Now if we've got access to subpath
+    # The recepient needs (enc_derived_key_sub, encrypted_content_key), encrypted_data and the the private key privkey_sub[subpath]
     enc_derived_key_sub, encrypted_content_key = enc_sub_keys[subpath]
+
     derived_key_sub = ecies.decapsulate(privkey_sub[subpath], enc_derived_key_sub)
     content_key = decrypt_sym(derived_key_sub, encrypted_content_key)
     decrypted_data = decrypt_sym(content_key, encrypted_data)
@@ -136,6 +138,48 @@ The full pseudocode of encrypting a file with all the subpath keys::
 
 Proxy re-encryption
 ---------------------
+Conceptually, proxy re-encryption is a way to delegate an untrusted third party to transform data encrypted under one key to be decryptable by another.
+In our case, Alice initially encrypts data under ``pubkey_enc_a`` (or a derived key) originally.
+When Bob comes along with his public key, Alice creates a re-encryption key ``re_ab`` out of ``privkey_enc_a`` and ``pubkey_enc_b``::
+Using ``re_ab``, Ursula can execute re-encryption to make data decryptable by Bob.
+The whole flow conceptually::
+
+    # Alice's side
+    ciphertext_alice = encrypt(pubkey_enc_a, data)
+    re_ab = rekey(privkey_enc_a, pubkey_enc_b)
+
+    # Ursula's side
+    ciphertext_bob = reencrypt(re_ab, ciphertext_alice)
+
+    # Bob's side
+    data = decrypt(privkey_enc_b, ciphertext_bob)
+
+The ciphertext ``ciphertext_alice`` is, in fact, ``(enc_derived_key_sub, encrypted_content_key)`` when ECIES is used.
+Decryption of this ciphertext gives Bob a symmetric key to decrypt ``encrypted_data`` when a hybrid (public key + symmetric) encryption is used.
+
+There are two types of re-encryption algorithms: *interactive* (where Alice needs Bob's *private* key to create a re-encryption key) and *non-interactive*
+(where Alice uses Bob's public key, as described above).
+We've created a proxy re-encryption algorithm for ECIES, but intrinsically it's interactive, whereas we need a non-interactive one.
+Fortunately, there is a way to convert one to another::
+
+    def noninteractive_rekey(privkey_a, pubkey_b):
+        privkey_eph = secure_random()
+        return (interactive_rekey(privkey_a, privkey_eph),
+                encrypt(pubkey_b, privkey_eph))
+
+    def noninteractive_reencrypt(rk, ciphertext_a):
+        return (interactive_reencrypt(rk[0], ciphertext_a),
+                rk[1])
+
+    def decrypt_reencrypted(privkey_b, ciphertext_re):
+        ciphertext_e, encrypted_eph = ciphertext_re
+        priv_eph = decrypt(privkey_b, encrypted_eph)
+        return decrypt(privkey_eph, ciphertext_e)
+
+Of course, this can be combined with what was described above regarding hybrid encryption and the ECIES scheme.
+Implementation of re-encryption for ECIES scheme can be found on our github, we call this scheme [Umbral]_.
+
+.. [Umbral] https://github.com/nucypher/nucypher-pre-python/blob/master/npre/umbral.py
 
 Split-key re-encryption
 --------------------------
