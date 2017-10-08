@@ -107,12 +107,41 @@ The pseudocode for this::
 
 Key per subpath
 ------------------
+We are able to share not only individual files, or not only Alice's data, but also each subpath Alice has in her file structure (it can be generalized to
+non-file hierarchical data also).
+For example, for each path ``'/path/to/file.txt'`` there will be derived keys for *subpaths* ``'/'``, ``'/path'``, ``'/path/to'`` and ``'/path/to/file.txt'``.
+The key is derived using *keccak256* hash function which is not susceptible to length extension attack.
+We use the derived key as a private key to encrypt for in ECIES.
+The full pseudocode of encrypting a file with all the subpath keys::
+
+
+    content_key = secure_random(key_length)
+    encrypted_data = encrypt_sym(content_key, data)
+
+    for subpath in subpaths:
+        privkey_sub[subpath] = keccak_hash(privkey_enc + subpath)
+        pubkey_sub[subpath] = priv2pub(privkey_sub[subpath])
+
+        derived_key_sub, enc_derived_key_sub = ecies.encapsulate(pubkey_sub[subpath])
+        encrypted_content_key = encrypt_sym(derived_key_sub, content_key)
+        enc_sub_keys[subpath] = (enc_derived_key_sub, encrypted_content_key)
+    ...
+
+    # Now if we've got access to subpath
+    enc_derived_key_sub, encrypted_content_key = enc_sub_keys[subpath]
+    derived_key_sub = ecies.decapsulate(privkey_sub[subpath], enc_derived_key_sub)
+    content_key = decrypt_sym(derived_key_sub, encrypted_content_key)
+    decrypted_data = decrypt_sym(content_key, encrypted_data)
+    assert decrypted_data == data
 
 Proxy re-encryption
 ---------------------
 
 Split-key re-encryption
 --------------------------
+
+All the encryption flow
+-------------------------
 
 Digital signatures
 --------------------
