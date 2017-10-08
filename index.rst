@@ -45,11 +45,41 @@ Most often all the "mining" NuCypher KMS nodes will be called by the name Ursula
 
 .. [PRE] https://en.wikipedia.org/wiki/Proxy_re-encryption
 
-Public key encryption and the concept of proxy re-encryption
-==============================================================
+Cryptographic algorithms used
+===========================
+
+Public key encryption
+------------------------
+Conceptually, public key encryption algorithms encrypt data using public key (which is publicly known) and decrypt using private (or secret) key::
+
+    encrypted_data = encrypt_pub(pubkey_enc, data)
+    decrypted_data = decrypt_pub(privkey_enc, encrypted_data)
+    assert data == decrypted_data
+
+For public key encryption we use Integrated Encryption Scheme [ECIES]_.
+We use elliptic curve cryptography on the curve *secp256k1* (the same as Bitcoin and Ethereum uses).
+
+In order to encrypt the bulk of the data, usually *symmetric encryption* is used.
+ECIES normally works in such a way that it generates a symmetric key to be used (it's a Diffie-Hellman secret which the recipient of the data can reconstruct).
+In our case, we want to have the same symmetric key encrypted for multiple paths.
+Hence, we encrypt a random per-file symmetric key with the generated key, and the file content is encrypted by the per-file symmetric key itself.
+
+.. [ECIES] https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme
+
+Symmetric encryption
+-----------------------
+
+Key per subpath
+------------------
+
+Proxy re-encryption
+---------------------
 
 Split-key re-encryption
-==========================
+--------------------------
+
+Digital signatures
+--------------------
 
 Network discovery
 ====================
