@@ -205,6 +205,7 @@ Conceptually, it works in the following manner::
     data = decrypt(privkey_enc_b, ciphertext_bob)
 
 We need to find at least ``m`` Ursulas out of ``n`` who have ``kFrags`` (re-encryption key fragments) in order to make the text decryptable by Bob.
+We also call fragments which Bob combines to get ``ciphertext_bob`` *cFrags*.
 
 Digital signatures
 --------------------
@@ -296,12 +297,93 @@ maliciously knock off by making treasure map undiscoverable.
 
 Correctness of re-encryption
 ==============================
+By just looking at the result of Ursula's re-encryption, a third party cannot figure out if it was correct or not.
+Thus, Alice pre-creates a bunch of re-encryptions for each Ursula to be challenged.
+We call it Challenge Pack.
+It is kept available to Bob and encrypted for Bob.
+The idea is that sometimes Bob can challenge Ursula with ciphertexts which do not contain any useful information but exist solely to show an evidence that
+Ursula is misbehaving if this starts happening.
 
-Enforcing correctness on Ethereum blockchain
-===============================================
+Agreement. Challenge pack
+---------------------
+When Ursula gets in agreement with Alice, she publishes::
+
+    hash(kFrag), pubkey_sig_ursula, pubkey-sig_alice, sign(alice, hash(kFrag))
+
+Ursula should confirm (publicly)::
+
+    sign(ursula, hash(kFrag))
+
+When Alice creates the policy, she pre-creates challenge *cFrags* in the following manner::
+
+    challenge_pack = defaultdict(list)
+    for kFrag in kFrags:
+        for _ in range(n_challenges):
+            challenge = secure_random()
+            ch_cfrag = reencrypt(kFrag, challenge)
+            ch_h = hash(kFrag)
+            challenge_pack[kFrag].append(
+                (challenge, ch_cfrag),
+                sign(alice, ch_h + challenge),
+                sign(alice, ch_h + challenge + ch_cfrag))
+
+The challenge pack gets encrypted for Bob using ``pubkey_enc_bob`` and stored in a DHT, just like the treasure map was stored.
+
+At any time, Bob can report misbehaving nodes using the challenge pack protocol. After successfully reporting, Bob gets rewarded if Ursula was caught not
+re-encrypting properly.
+
+Possible misbehavior modes:
+
+* Ursula not being online for re-encryption;
+* Ursula returning false results;
+* Alice producing the wrong challenge pack intentionally, in order to frame Ursula as guilty;
+* Bob trying to spam Ursula(s) in order to damage the system's availability (alternatively, EvilBob trying to make Ursulas who handle Bob's kFrags unavailable).
+
+Ursula's misbehavior can be caused by Ursula forgetting the kFrag, refusing to operate (because she doesn't like Bob) or Ursula simply going offline.
+
+Challenge protocol
+------------------------
+If Bob decides that Ursula could be misbehaving, he unseals the challenge pack.
+He gets the ``challenge``, the expected result ``ch_cfrag`` and their signatures by randomly selecting from the list.
+
+Bob challenges Ursula with a value from challenge pack::
+
+    Ursula, decrypt this: challenge
+
+If Ursula doesn't respond in time, Bob publishes the input string (signed by Alice) to the smart contact (or oracles)::
+
+    Alert, Ursula didn't decrypt: challenge, ch_cfrag, sig(alice, ch_h + challenge), alice_pubkey
+
+If Ursula doesn't respond in the next few blocks, she gets penalized after some specified number of blocks.
+
+If Ursula responds but it's garbage, we get to the next point; if it's not garbage - money don't get seized. In any case, Ursula says::
+
+    challenge, reencrypt(challenge), ch_h, sig(ursula, hash(challenge + reencrypt(challenge) + ch_h)), ursula_pubkey
+
+If Ursula returns garbage, Bob published both Ursula's response (signed by Ursula) and the input challenge (signed by Alice) to the smart contract (or if Bob
+doesn't do that, Ursula was ok and continue)::
+
+    Guys, Ursula got the wrong result! challenge, ch_cfrag, ch_h, sig(alice, ch_h + challenge + ch_cfrag)
+
+Smart contract can verify that Ursula's response is not the same as the challenge pack response (e.g. ``ch_cfrag != reencrypt(challenge)``).
+Proxy re-encryption algorithm we have for ECIES allows Ursula to verify that Alice gave her a working re-encryption key.
+So when Ursula came to the agreement, she had an opportunity to check.
+
+If Ursula ended up being penalized, Bob gets the seized money.
 
 Centralized stub to mock trustless functionality
 =================================================
 
+Seizing money, as well as discovering treasure map and challenge pack, requires rigorous testing.
+Thus, we will launch a temporary centralized service which will be replacing pieces of decentralized functionality until it's implemented in a decentralized
+way.
+We should note that re-encryption keys will still be handled by multiple network participants.
+The proposed centralized service just mitigates risks of participants refusing to behave correctly until the Solidity code which enforces all the conditions is
+thoroughly tested.
+
 Conclusion
 ============
+We described the first version of the decentralized key management system NuCypher KMS.
+It does enforce correctness of operation, but it yet doesn't disinsentivize leaking ``kFrags``.
+Neither it focuses on anonymity of re-encryption.
+This will be the goal for future releases.
