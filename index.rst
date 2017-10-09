@@ -269,9 +269,23 @@ The whole protocol in brief::
     # we may want to store treasure_map signed by Alice
     kademlia[policy_group_id] = treasure_map
 
+The nodes who host ``policy_group_id`` could be same Ursulas or any other public side-channel (not a DHT in that case).
+A potential flaw of this protocol (and Kademlia in particular) would be a possibility that someone spins up multiple nodes deliberately close to a chosen
+``policy_group_id`` (since it's possible to calculate it for particular Alice, Bob and subpath).
+In order to become Ursulas, it is required to stake a significant amount of coins, so it wouldn't necessarily be cheap to knock down a particular
+``policy_group_id``.
+We note that this problem exists even for Kademlia DHT used for BitTorrent protocol.
+
 .. [Kademlia] https://en.wikipedia.org/wiki/Kademlia
 
-Talking to Ursulas
+Bob talking to Ursulas
+------------------------
+When Bob wants to use the policy, he first derives ``policy_group_id`` himself.
+He then finds the treasure map and decrypts it.
+From the result of decryption, he knows which Ursulas have the kFrags.
+He connects to those Ursulas and asks them to re-encrypt encrypted symmetric keys he has found for the file of interest.
+
+Becoming an Ursula
 --------------------
 
 Correctness of re-encryption
