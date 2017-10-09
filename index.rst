@@ -215,6 +215,64 @@ Each participants has a signing keypair ``privkey_sig / pubkey_sig`` which coinc
 
 Network discovery
 ====================
+Policy IDs
+------------
+Each re-encryption key fragment ``kFrag`` has a *policy* associated with it.
+We call the group corresponding holding all the key fragments generated in one split-key re-encryption a *policy group*.
+
+Each policy group has a ``policy_group_id``, generated deterministically for Alice, Bob and the shared path::
+
+    h = hash(pubkey_sig_alice + pubkey_sig_bob + subpath)
+    policy_group_id = hash(pubkey_sig_alice + h) + h
+
+The id ``policy_group_id`` is seemingly random (which is important for protocols like Kademlia), but knowing Alice's public key Ursula can determine that Alice
+is allowed to create this ID.
+If Alice can sign her request and Ursula can reconstruct the first half of ``policy_group_id`` using Alice's public key and the second half, Alice can indeed
+create this policy.
+This way, nobody else can claim Alice's place w/o revealing much information to the public in clear.
+It should be noted, however, that this doesn't suffice for a truly anonymous protocol as long as it is possible to iterate over all the public keys in the
+system to figure out which policy group belongs to which pair of participants.
+
+The ID of policies ``policy_id`` are generated as::
+
+    h = random()
+    policy_id = hash(pubkey_sig_alice + h) + h
+
+Ursula can still check if ``policy_id`` belongs to Alice, but it's posible to keep it completely random rather than connected to Alice's public key if an
+anonymous protocol is needed.
+
+Finding Ursulas. Treasure map
+---------------------------------
+When Alice wants to permit Bob to read something, she first creates a bunch of ``kFrags``.
+She generates ``policy_group_id`` for all of them together, and ``policy_id`` for each.
+
+She finds ``n`` Ursulas who agree to store ``kFrags`` for long enough, and it is still within their quotas.
+With each, she stores a kFrag in her key-value store ``{policy_id -> kFrag}``.
+
+Then, she encrypts a list of all Ursulas who ended up storing kFrags using Bob's public key.
+She stores this whole list in a Kademlia DHT [Kademlia]_.
+This list is called *treasure map*.
+Importantly, the treasure map is allowed to be replicated and migrated to different nodes, while ``kFrags`` stay with the Ursulas they were assigned to all the
+time.
+
+The whole protocol in brief::
+
+    h = hash(pubkey_sig_alice + pubkey_sig_bob + subpath)
+    policy_group_id = hash(pubkey_sig_alice + h) + h
+
+    ursulas = find_random_ursulas(n)
+    for ursula in ursulas:
+        policy_id = generate_policy_id()
+        ursula[policy_id] = kFrag
+
+    treasure_map = encrypt(pubkey_enc_bob, {policy_id -> ursula for ursula in ursulas})
+    # we may want to store treasure_map signed by Alice
+    kademlia[policy_group_id] = treasure_map
+
+.. [Kademlia] https://en.wikipedia.org/wiki/Kademlia
+
+Talking to Ursulas
+--------------------
 
 Correctness of re-encryption
 ==============================
