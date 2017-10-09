@@ -287,6 +287,12 @@ He connects to those Ursulas and asks them to re-encrypt encrypted symmetric key
 
 Becoming an Ursula
 --------------------
+In order to prevent the problem of creating Ursulas deliberately close to a ``policy_group_id``, we can make a special ceremony for becoming an Ursula.
+Ursulas can put up their stake, and a smart contract awards an Ursula with the highest stake in the round a pseudorandom ID (rather than an ID calculated from
+Ursula's public key).
+Ursula commits her stake to be up and working for at least certain time.
+This way, becoming an Ursula is not a trivial endeavour, and one cannot simply spin up a thousand Ursulas close to some ``policy_group_id`` which he wants to
+maliciously knock off by making treasure map undiscoverable.
 
 Correctness of re-encryption
 ==============================
