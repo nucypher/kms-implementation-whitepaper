@@ -10,7 +10,7 @@ This implementation white paper describes the first working version of the NuCyp
 This first version is focused on enforcing correctness of operation.
 Providing incentives for not leaking re-encryption keys will not be the goal of this first release.
 
-The white paper introduces all the network participants, giving them human names an defining function of each.
+The white paper introduces all the network participants, giving them human names and defining function of each.
 Then it describes encryption/decryption and re-encryption algorithms used.
 Next, we describe how the decentralized network is built.
 After that, we describe how the correctness of re-encryption is enforced on Ethereum blockchain.
