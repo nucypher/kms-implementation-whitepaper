@@ -65,7 +65,7 @@ ECIES normally works in such a way that it generates a symmetric key to be used 
 In our case, we want to have the same symmetric key encrypted for multiple paths.
 Hence, we encrypt a random per-file symmetric key with the generated key, and the file content is encrypted by the per-file symmetric key itself.
 
-The concept of generating a shares secret by ECIES can be expressed with the following pseudocode::
+The concept of generating a shared secret by ECIES can be expressed with the following pseudocode::
 
     shared_secret, ciphertext = ecies.encapsulate(pubkey_enc)
     decrypted_shared_secret = ecies.decapsulate(privkey_enc)
@@ -356,7 +356,7 @@ If Ursula doesn't respond in time, Bob publishes the input string (signed by Ali
 
 If Ursula doesn't respond in the next few blocks, she gets penalized after some specified number of blocks.
 
-If Ursula responds but it's garbage, we get to the next point; if it's not garbage - money don't get seized. In any case, Ursula says::
+If Ursula responds but it's garbage, we get to the next point; if it's not garbage - her stake doesn't get seized. In any case, Ursula says::
 
     challenge, reencrypt(challenge), ch_h, sig(ursula, hash(challenge + reencrypt(challenge) + ch_h)), ursula_pubkey
 
@@ -366,15 +366,15 @@ doesn't do that, Ursula was ok and continue)::
     Guys, Ursula got the wrong result! challenge, ch_cfrag, ch_h, sig(alice, ch_h + challenge + ch_cfrag)
 
 Smart contract can verify that Ursula's response is not the same as the challenge pack response (e.g. ``ch_cfrag != reencrypt(challenge)``).
-Proxy re-encryption algorithm we have for ECIES allows Ursula to verify that Alice gave her a working re-encryption key.
+The proxy re-encryption algorithm we have for ECIES allows Ursula to verify that Alice gave her a working re-encryption key.
 So when Ursula came to the agreement, she had an opportunity to check.
 
-If Ursula ended up being penalized, Bob gets the seized money.
+If Ursula ended up being penalized, Bob gets the seized collateral.
 
 Centralized stub to mock trustless functionality
 =================================================
 
-Seizing money, as well as discovering treasure map and challenge pack, requires rigorous testing.
+Seizing collateral, as well as discovering treasure map and challenge pack, requires rigorous testing.
 Thus, we will launch a temporary centralized service which will be replacing pieces of decentralized functionality until it's implemented in a decentralized
 way.
 We should note that re-encryption keys will still be handled by multiple network participants.
@@ -385,5 +385,5 @@ Conclusion
 ============
 We described the first version of the decentralized key management system NuCypher KMS.
 It does enforce correctness of operation, but it yet doesn't disinsentivize leaking ``kFrags``.
-Neither it focuses on anonymity of re-encryption.
+Neither does it focuses on anonymity of re-encryption.
 This will be the goal for future releases.
